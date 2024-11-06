@@ -8,11 +8,14 @@ def stream_text(text):
 
 st.title("Tsakonian translator")
 
-with st.spinner('Loading model... This might take a while'):
-    llm = Llama.from_pretrained(
-        repo_id="jgchaparro/Tyros-v5-8B-GGUF",
-        filename="tyros-v5-8b.Q2_K.gguf",
-    )
+if st.session_state.get("model_loaded", False) == False:
+    with st.spinner('Loading model... This might take 5 minutes to run.'):
+        llm = Llama.from_pretrained(
+            repo_id="jgchaparro/Tyros-v5-8B-GGUF",
+            filename="tyros-v5-8b.Q2_K.gguf",
+        )
+        st.session_state.model_loaded = True
+        st.session_state.llm = llm
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -27,7 +30,7 @@ if greek_sentence := st.chat_input("Input a sentence in Greek to translate to Ts
         st.markdown(greek_sentence)
 
     with st.chat_message("assistant"):
-        response = llm.create_chat_completion(
+        response = st.session_state.llm.create_chat_completion(
         messages = [
             {
                 "role": "user",
@@ -37,6 +40,6 @@ if greek_sentence := st.chat_input("Input a sentence in Greek to translate to Ts
         temperature = 0,
     )
 
-    translation = response['choices'][0]['message']['content']
-    st.write_stream(stream_text(translation))
-    st.session_state.messages.append({"role": "assistant", "content": translation})
+        translation = response['choices'][0]['message']['content'].replace('Translation to Tsakonian: ', "")
+        st.write_stream(stream_text(translation))
+        st.session_state.messages.append({"role": "assistant", "content": translation})
